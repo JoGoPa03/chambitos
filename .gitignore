@@ -1,0 +1,15 @@
+node_modules/
+.expo/
+dist/
+web-build/
+chambitos-api/target/
+*.log
+.env
+.env.*
+respaldo-app-anterior/
+respaldo-app-rc/
+*.b64
+*.tgz
+.claude/settings.local.json
+.DS_Store
+Thumbs.db

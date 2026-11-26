@@ -1,0 +1,577 @@
+<title>Chambitos Prototipo v1</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+/* layout: lienzo neutro con un móvil Android centrado y una columna de notas; colores sacados de autobuseschambitos.com */
+:root{
+  --bg:#efebe9; --fg:#1e1810; --muted:#575250; --line:#ddd5d2;
+  --phone:#ffffff; --surface:#f8f5f4; --brand:#a80607; --brand-fg:#ffffff; --brand-dark:#1e1810;
+  --accent:#ff5100; --accent-fg:#ffffff; --ok:#1d7a46; --bad:#a80607; --seat:#ebe5e3; --seat-taken:#8a8381;
+  --display:"Archivo",system-ui,sans-serif; --body:"Inter",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141110; --fg:#f2ece9; --muted:#b0a7a3; --line:#3a3330;
+  --phone:#1e1a18; --surface:#28221f; --brand:#a80607; --brand-fg:#ffffff; --brand-dark:#0e0b0a;
+  --accent:#ff7a3d; --accent-fg:#1e1810; --ok:#5cc98a; --bad:#ff8a80; --seat:#3a3330; --seat-taken:#6b6360; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141110; --fg:#f2ece9; --muted:#b0a7a3; --line:#3a3330;
+  --phone:#1e1a18; --surface:#28221f; --brand:#a80607; --brand-fg:#ffffff; --brand-dark:#0e0b0a;
+  --accent:#ff7a3d; --accent-fg:#1e1810; --ok:#5cc98a; --bad:#ff8a80; --seat:#3a3330; --seat-taken:#6b6360; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px}
+.wrap{max-width:980px;margin:0 auto;display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start;justify-content:center}
+.notes{flex:1 1 300px;min-width:0;max-width:420px}
+.notes h1{font-family:var(--display);font-weight:800;font-size:28px;margin:0 0 6px;text-wrap:balance}
+.notes p{color:var(--muted);line-height:1.55;margin:0 0 12px}
+.jump{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0}
+.jump button{font:500 13px var(--body);border:1px solid var(--line);background:var(--phone);color:var(--fg);border-radius:6px;padding:6px 10px;cursor:pointer}
+.jump button[aria-current="true"]{background:var(--brand);color:var(--brand-fg);border-color:var(--brand)}
+.rf{font:500 12px var(--mono);color:var(--brand)}
+.phone{flex:0 0 auto;width:360px;max-width:100%;height:720px;border-radius:34px;border:10px solid #1e1810;background:var(--phone);overflow:hidden;display:flex;flex-direction:column;position:relative}
+.status{height:24px;display:flex;justify-content:space-between;padding:0 18px;font:500 12px var(--body);align-items:center;color:#fff;background:var(--brand-dark)}
+.bar{background:var(--brand);color:var(--brand-fg);padding:10px 12px;display:flex;align-items:center;gap:10px;min-height:58px}
+.bar img{height:34px;width:auto}
+.bar h2{margin:0;font:700 16px var(--display);flex:1;text-align:right}
+.bar button{background:none;border:0;color:inherit;font-size:20px;cursor:pointer;padding:0 4px}
+.screen{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.nav{display:flex;border-top:1px solid var(--line);background:var(--phone)}
+.nav button{flex:1;background:none;border:0;padding:10px 0 12px;font:500 11px var(--body);color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+.nav button .ic{font-size:18px}
+.nav button.on{color:var(--brand);font-weight:600}
+label{font:500 12px var(--body);color:var(--muted);display:flex;flex-direction:column;gap:4px}
+input,select{font:400 15px var(--body);padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg)}
+.btn{font:600 15px var(--body);padding:13px;border-radius:8px;border:0;background:var(--brand);color:var(--brand-fg);cursor:pointer;text-transform:uppercase;letter-spacing:.04em;font-size:14px}
+.btn.alt{background:var(--brand-dark);color:#fff}
+.btn.ghost{background:none;border:1px solid var(--line);color:var(--fg)}
+.btn.danger{background:none;border:1px solid var(--bad);color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,.jump button:focus-visible,.nav button:focus-visible,.trip:focus-visible,.seat:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hero{background:var(--brand);margin:-16px -16px 4px;padding:28px 20px 22px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.hero img{width:220px;height:auto}
+.hero span{color:#fff;font-size:13px;opacity:.85}
+.sub{color:var(--muted);margin:0;font-size:14px}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{flex:1;padding:9px;border:0;background:var(--surface);color:var(--fg);font:500 13px var(--body);cursor:pointer}
+.seg button.on{background:var(--brand);color:var(--brand-fg)}
+.trip{border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;grid-template-columns:1fr auto;gap:4px 10px;cursor:pointer;background:var(--phone);text-align:left;color:var(--fg);font:inherit}
+.trip .t{font:700 18px var(--display);font-variant-numeric:tabular-nums}
+.trip .p{font:700 17px var(--display);color:var(--brand);text-align:right}
+.trip .m{color:var(--muted);font-size:13px}
+.pill{font:600 11px var(--body);padding:3px 8px;border-radius:99px;justify-self:end;background:var(--seat);color:var(--fg)}
+.pill.low{background:var(--accent);color:var(--accent-fg)}
+.pill.ok{background:var(--ok);color:var(--phone)}
+.pill.bad{background:var(--bad);color:var(--phone)}
+.pill.line{background:var(--brand-dark);color:#fff;font-family:var(--mono)}
+.head{font:600 12px var(--body);color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:4px 0 0}
+.bus{border:2px solid var(--line);border-radius:22px 22px 10px 10px;padding:14px 12px;display:grid;grid-template-columns:repeat(2,1fr) 18px repeat(2,1fr);gap:7px;align-self:center;width:200px}
+.bus .front{grid-column:1/-1;font:500 11px var(--mono);color:var(--muted);text-align:center;margin-bottom:4px}
+.seat{aspect-ratio:1;max-width:100%;border-radius:6px;border:0;background:var(--seat);color:var(--fg);font:500 11px var(--mono);cursor:pointer}
+.seat.taken{background:var(--seat-taken);color:var(--phone);cursor:not-allowed}
+.seat.sel{background:var(--brand);color:#fff}
+.legend{display:flex;gap:12px;justify-content:center;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+.ticket{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.ticket .top{background:var(--brand);color:var(--brand-fg);padding:14px}
+.ticket .top b{font:800 20px var(--display);display:block}
+.ticket dl{margin:0;padding:12px 14px;display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:14px}
+.ticket dt{color:var(--muted)} .ticket dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+.code{font:500 13px var(--mono);text-align:center;padding:10px;border-top:1px dashed var(--line);color:var(--muted)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding:10px 0}
+.row:last-child{border-bottom:0}
+.row .n{font-weight:600}
+.row .d{color:var(--muted);font-size:13px}
+.stops{list-style:none;margin:0;padding:0 0 0 14px;border-left:3px solid var(--brand)}
+.stops li{position:relative;padding:5px 0 5px 10px;display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.stops li::before{content:"";position:absolute;left:-21px;top:10px;width:11px;height:11px;border-radius:50%;background:var(--phone);border:3px solid var(--brand)}
+.stops li span:last-child{font-family:var(--mono);color:var(--muted);font-size:12px;text-align:right}
+.toast{position:absolute;left:16px;right:16px;bottom:74px;background:var(--fg);color:var(--phone);padding:11px 14px;border-radius:8px;font-size:14px}
+.card{border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.card summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.card summary::-webkit-details-marker{display:none}
+.tag{font:600 11px var(--body);background:var(--accent);color:var(--accent-fg);border-radius:4px;padding:2px 6px;align-self:flex-start}
+.map{border-radius:10px;overflow:hidden;border:1px solid var(--line);background:var(--surface)}
+.map svg{display:block;width:100%;height:auto}
+.confirm{display:flex;gap:8px}
+.confirm .btn{flex:1}
+.empty{border:1px dashed var(--line);border-radius:10px;padding:16px;color:var(--muted);font-size:14px;text-align:center}
+.enter{animation:entra .32s cubic-bezier(.2,.8,.2,1)}
+.enter.back{animation-name:vuelve}
+@keyframes entra{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
+@keyframes vuelve{from{opacity:0;transform:translateX(-28px)}to{opacity:1;transform:none}}
+.btn,.trip,.seat{transition:transform .12s,box-shadow .2s}
+.btn:active:not(:disabled),.trip:active:not(:disabled){transform:scale(.97)}
+.trip:hover:not(:disabled){box-shadow:0 4px 14px rgba(30,24,16,.12)}
+.stagger>*{animation:sube .4s both cubic-bezier(.2,.8,.2,1)}
+.stagger>*:nth-child(2){animation-delay:.07s}.stagger>*:nth-child(3){animation-delay:.14s}.stagger>*:nth-child(4){animation-delay:.21s}.stagger>*:nth-child(5){animation-delay:.28s}.stagger>*:nth-child(6){animation-delay:.35s}
+@keyframes sube{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.skel{height:78px;border-radius:10px;background:linear-gradient(90deg,var(--seat) 0%,var(--surface) 50%,var(--seat) 100%);background-size:200% 100%;animation:brillo 1s linear infinite}
+@keyframes brillo{from{background-position:200% 0}to{background-position:0 0}}
+.seat.sel{animation:pop .3s}
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.25)}100%{transform:scale(1)}}
+.check{width:64px;height:64px;align-self:center}
+.check circle{stroke-dasharray:190;stroke-dashoffset:190;animation:dibuja .5s .1s forwards}
+.check path{stroke-dasharray:50;stroke-dashoffset:50;animation:dibuja .35s .55s forwards}
+@keyframes dibuja{to{stroke-dashoffset:0}}
+.ticket{animation:sube .45s .4s both}
+.splash{flex:1;background:var(--brand);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;overflow:hidden;position:relative}
+.splash img{width:230px;height:auto;animation:sube .6s .2s both}
+.splash .road{position:absolute;bottom:120px;left:0;right:0;height:2px;background:rgba(255,255,255,.35)}
+.splash .busico{position:absolute;bottom:122px;left:-90px;animation:conduce 1.9s .3s cubic-bezier(.5,0,.3,1) forwards}
+@keyframes conduce{to{left:110%}}
+.splash small{position:absolute;bottom:60px;color:#fff;opacity:.8;font-size:13px}
+.err{color:var(--bad);font-size:12px;margin-top:-6px}
+.chk{flex-direction:row;align-items:center;gap:8px;font-size:13px;color:var(--fg)}
+.chk input{width:18px;height:18px;padding:0}
+.fuerza{height:5px;border-radius:3px;background:var(--seat);overflow:hidden;margin-top:-6px}
+.fuerza i{display:block;height:100%;transition:width .3s,background .3s}
+.shake{animation:tiembla .35s}
+@keyframes tiembla{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.favs{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
+.chip{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:99px;padding:7px 12px;font:500 13px var(--body);cursor:pointer;white-space:nowrap}
+.chip b{color:var(--brand)}
+.star{background:none;border:0;color:#fff;font-size:22px;cursor:pointer;padding:0 2px;line-height:1}
+.star.on{color:#ffd54a;animation:pop .3s}
+.prox{background:var(--brand-dark);color:#fff;border-radius:12px;padding:14px;display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center}
+.prox small{opacity:.75;font-size:12px;grid-column:1/-1}
+.prox b{font:700 17px var(--display)}
+.prox .cd{font:700 26px var(--mono);grid-row:2/4;grid-column:2;font-variant-numeric:tabular-nums}
+.prox span{opacity:.85;font-size:13px}
+.near{display:flex;gap:10px;align-items:center;border:1px dashed var(--line);border-radius:10px;padding:10px 12px;font-size:13px}
+.near button{margin-left:auto;padding:7px 10px;font-size:12px}
+.qr{align-self:center;background:#fff;padding:10px;border-radius:8px;margin:4px auto 10px;width:max-content}
+.qr img,.qr canvas{display:block;width:130px;height:130px}
+.noti{position:absolute;left:10px;right:10px;top:30px;background:var(--phone);color:var(--fg);border:1px solid var(--line);border-radius:14px;padding:10px 12px;box-shadow:0 8px 24px rgba(0,0,0,.25);display:flex;gap:10px;z-index:5;animation:baja 4.2s forwards}
+.noti .ico{width:34px;height:34px;border-radius:8px;background:var(--brand);flex:0 0 auto;display:flex;align-items:center;justify-content:center}
+.noti .ico img{width:30px}
+.noti p{margin:0;font-size:13px;line-height:1.35}
+@keyframes baja{0%{transform:translateY(-120%)}10%,85%{transform:none}100%{transform:translateY(-140%)}}
+.screen>*{flex-shrink:0}
+.sw{display:flex;flex-direction:row;align-items:center;gap:8px;font-size:13px;color:var(--fg);cursor:pointer}
+.sw input{appearance:none;width:34px;height:20px;border-radius:99px;background:var(--seat-taken);position:relative;cursor:pointer;padding:0;border:0;transition:background .2s}
+.sw input::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s}
+.sw input:checked{background:var(--ok)}
+.sw input:checked::after{left:16px}
+.mapa2{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface);position:relative}
+.mapa2 svg{display:block;width:100%;height:auto}
+.mapa2 .ruta{stroke-dasharray:6 6;animation:anda 1s linear infinite}
+@keyframes anda{to{stroke-dashoffset:-12}}
+.mapa2 .yo{animation:pulso 1.6s ease-out infinite;transform-origin:center;transform-box:fill-box}
+@keyframes pulso{0%{opacity:.6;transform:scale(1)}100%{opacity:0;transform:scale(3)}}
+.mapa2 .esc{position:absolute;right:8px;bottom:6px;font:500 10px var(--mono);color:var(--muted);background:var(--phone);padding:2px 5px;border-radius:4px}
+.datos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.datos div{background:var(--surface);border-radius:8px;padding:8px 4px}
+.datos b{display:block;font:700 18px var(--display);color:var(--brand)}
+.datos span{font-size:11px;color:var(--muted)}
+.gmaps{display:block;text-align:center;text-decoration:none}
+.offbar{background:#5a5654;color:#fff;font:500 12px var(--body);text-align:center;padding:5px}
+.swap{align-self:flex-end;margin:-6px 0 -6px;border:1px solid var(--line);background:var(--phone);color:var(--brand);border-radius:50%;width:38px;height:38px;font-size:18px;cursor:pointer;transition:transform .3s}
+.swap:active{transform:rotate(180deg)}
+.cnt{display:flex;align-items:center;gap:12px;justify-content:center}
+.cnt button{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-size:18px;cursor:pointer}
+.cnt b{font:700 20px var(--display);min-width:24px;text-align:center}
+.estado{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:30px 10px;color:var(--muted)}
+.estado svg{width:90px;height:90px}
+.estado b{color:var(--fg);font:700 17px var(--display)}
+.avatar{width:72px;height:72px;border-radius:50%;background:var(--brand);color:#fff;font:800 30px var(--display);display:flex;align-items:center;justify-content:center;align-self:center}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stats div{border:1px solid var(--line);border-radius:8px;padding:8px 4px}
+.stats b{display:block;font:700 20px var(--display)}
+.stats span{font-size:11px;color:var(--muted)}
+.occ{display:grid;grid-template-columns:34px 1fr 44px;gap:8px;align-items:center;font-size:13px}
+.occ .tr{height:14px;background:var(--seat);border-radius:7px;overflow:hidden}
+.occ .tr i{display:block;height:100%;border-radius:7px;animation:crece .8s cubic-bezier(.2,.8,.2,1) both}
+@keyframes crece{from{width:0!important}}
+.occ span:last-child{font-family:var(--mono);text-align:right}
+.kpi{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kpi div{background:var(--surface);border-radius:8px;padding:10px}
+.kpi b{display:block;font:700 22px var(--display);color:var(--brand)}
+.kpi span{font-size:12px;color:var(--muted)}
+.arow{display:flex;justify-content:space-between;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding:10px 0}
+.arow .n{font-weight:600;font-size:14px}
+.arow .d{color:var(--muted);font-size:12px}
+.acts{display:flex;gap:4px;flex-shrink:0}
+.ib{border:1px solid var(--line);background:var(--phone);color:var(--fg);border-radius:6px;padding:6px 8px;font:500 12px var(--body);cursor:pointer}
+.ib.del{color:var(--bad);border-color:var(--bad)}
+.aviso{background:var(--surface);border:1px solid var(--bad);border-radius:8px;padding:10px;font-size:13px;display:flex;flex-direction:column;gap:8px;margin:6px 0}
+.chks{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.chks label{flex-direction:row;align-items:center;gap:6px;font-size:13px;color:var(--fg)}
+.chks input{width:16px;height:16px;padding:0}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.r2 label{min-width:0}.r2 input,.r2 select{min-width:0;width:100%}
+.hor{overflow-x:auto;border:1px solid var(--line);border-radius:10px;flex-shrink:0}
+.hor table{border-collapse:collapse;font-size:13px;width:100%}
+.hor th,.hor td{padding:8px 9px;text-align:center;white-space:nowrap;border-bottom:1px solid var(--line)}
+.hor tbody tr:nth-child(even){background:var(--surface)}
+.hor thead th{background:var(--brand);color:#fff;font-weight:600;position:sticky;top:0}
+.hor thead th:first-child,.hor tbody th{position:sticky;left:0;text-align:left;z-index:1}
+.hor tbody th{background:var(--phone);font-weight:600;border-right:1px solid var(--line)}
+.hor tbody tr:nth-child(even) th{background:var(--surface)}
+.hor thead th:first-child{background:var(--brand)}
+.hor td{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.hor td.ext{font-weight:700;color:var(--brand)}
+.hor .no{color:var(--seat-taken)}
+.hor .pill.line{background:#fff;color:var(--brand)}
+.lerr{color:var(--bad);font-size:13px;text-align:center}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+  <div class="phone" id="phone">
+    <div class="status"><span>9:41</span><span>4G ▮▮▮ 82%</span></div>
+    <div id="app" style="flex:1;display:flex;flex-direction:column;min-height:0"></div>
+  </div>
+  <div class="notes">
+    <h1>Chambitos, prototipo 7</h1>
+    <p>Colores y logo de la web de Autobuses Chambitos. Las líneas, paradas y horas son las del PDF de horarios de su web (Línea 1 y Línea 2). Los precios y las plazas ocupadas son de ejemplo porque la web no los publica.</p>
+    <div class="jump" id="jump"></div>
+    <p id="note"></p>
+    <label style="flex-direction:row;align-items:center;gap:8px;font-size:13px;color:var(--fg)"><input type="checkbox" id="offline" onchange="S.offline=this.checked;anterior=S.pantalla;pintar(true)" style="width:18px;height:18px;padding:0">Simular que el móvil no tiene conexión</label>
+  </div>
+</div>
+
+<script>
+const LOGO="data:image/png;base64,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";
+const lineas=[
+ {id:"1",nombre:"Línea 1 · La Font de la Figuera - Xàtiva",sub:"1a La Font - Xàtiva · 1b La Font - Moixent · 1c La Llosa de Ranes - Xàtiva",
+  paradas:["La Font de la Figuera","Moixent","Vallada","Montesa","La Llosa de Ranes","Xàtiva","C.E. Xàtiva","Hospital Xàtiva"]},
+ {id:"2",nombre:"Línea 2 · Llutxent - Xàtiva",sub:"2a Benicolet - Xàtiva · 2b Pinet - Xàtiva",
+  paradas:["Benicolet","Pinet","Llutxent","Quatretonda","Genovés","Xàtiva","C.E. Xàtiva","Hospital Xàtiva"]}
+];
+const L="L";
+const viajes=[
+ {id:1,linea:"1a",dias:L,p:[["La Font de la Figuera","06:35"],["Moixent","06:50"],["Vallada","07:05"],["Montesa","07:15"],["La Llosa de Ranes","07:26"],["Xàtiva","07:36"],["C.E. Xàtiva","07:39"],["Hospital Xàtiva","07:47"]]},
+ {id:2,linea:"1b",dias:L,p:[["La Font de la Figuera","09:45"],["Moixent","10:00"]]},
+ {id:3,linea:"1c",dias:L,p:[["La Llosa de Ranes","10:00"],["Xàtiva","10:10"],["C.E. Xàtiva","10:15"],["Hospital Xàtiva","10:23"]]},
+ {id:4,linea:"1b",dias:L,p:[["La Font de la Figuera","15:30"],["Moixent","15:45"]]},
+ {id:5,linea:"1a",dias:L,p:[["La Font de la Figuera","16:35"],["Moixent","16:45"],["Vallada","17:00"],["Montesa","17:10"],["La Llosa de Ranes","17:21"],["Xàtiva","17:30"],["C.E. Xàtiva","17:35"],["Hospital Xàtiva","17:45"]]},
+ {id:6,linea:"1a",dias:L,p:[["Hospital Xàtiva","12:20"],["C.E. Xàtiva","12:28"],["Xàtiva","12:32"],["La Llosa de Ranes","12:37"],["Montesa","12:47"],["Vallada","12:52"],["Moixent","13:02"],["La Font de la Figuera","13:22"]]},
+ {id:7,linea:"1c",dias:L,p:[["Hospital Xàtiva","12:30"],["C.E. Xàtiva","12:38"],["Xàtiva","12:42"],["La Llosa de Ranes","12:47"]]},
+ {id:8,linea:"1a",dias:L,p:[["Hospital Xàtiva","17:50"],["C.E. Xàtiva","17:55"],["Xàtiva","18:00"],["La Llosa de Ranes","18:05"],["Montesa","18:15"],["Vallada","18:30"],["Moixent","18:40"],["La Font de la Figuera","18:55"]]},
+ {id:9,linea:"1b",dias:L,p:[["Moixent","10:00"],["La Font de la Figuera","10:15"]]},
+ {id:10,linea:"1b",dias:L,p:[["Moixent","16:15"],["La Font de la Figuera","16:30"]]},
+ {id:11,linea:"1b",dias:"F",p:[["La Font de la Figuera","08:30"],["Moixent","08:45"]]},
+ {id:12,linea:"1b",dias:"F",p:[["Moixent","14:30"],["La Font de la Figuera","14:45"]]},
+ {id:13,linea:"2a",dias:L,p:[["Benicolet","07:05"],["Llutxent","07:10"],["Quatretonda","07:15"],["Genovés","07:25"],["Xàtiva","07:35"],["C.E. Xàtiva","07:39"],["Hospital Xàtiva","07:47"]]},
+ {id:14,linea:"2b",dias:L,p:[["Pinet","15:15"],["Llutxent","15:25"],["Quatretonda","15:30"],["Genovés","15:40"],["Xàtiva","15:45"],["C.E. Xàtiva","15:50"],["Hospital Xàtiva","15:55"]]},
+ {id:15,linea:"2a",dias:L,p:[["Hospital Xàtiva","14:00"],["C.E. Xàtiva","14:08"],["Xàtiva","14:12"],["Genovés","14:22"],["Quatretonda","14:32"],["Llutxent","14:37"],["Benicolet","14:42"]]},
+ {id:16,linea:"2b",dias:L,p:[["Hospital Xàtiva","17:30"],["C.E. Xàtiva","17:38"],["Xàtiva","17:42"],["Genovés","17:52"],["Quatretonda","18:02"],["Llutxent","18:07"],["Pinet","18:17"]]}
+];
+const buses=[{mat:"4721 LKM",plazas:40},{mat:"8813 JGT",plazas:40},{mat:"2290 MBC",plazas:55},{mat:"6604 KSD",plazas:30}];
+const pv=(v,i,j)=>v.precio?Number(v.precio).toFixed(2).replace(".",","):precio(i,j);
+viajes.forEach((v,i)=>{v.total=40;v.libres=[23,4,31,0,17,26,12,9,35,30,38,36,14,20,22,3][i];v.bus=["4721 LKM","8813 JGT","2290 MBC","6604 KSD"][i%4]});
+const paradas=[...new Set(viajes.flatMap(v=>v.p.map(x=>x[0])))].sort((a,b)=>a.localeCompare(b));
+
+let S={pantalla:"splash",lin:0,sent:"ida",dia:"L",offline:false,franja:"todos",nv:1,plazas:[],mail:"",pwd:{a:"",n:"",r:"",open:false,e:""},lmail:"",lpass:"",lerr:"",nombre:"Viajero",cerca:null,favs:leerFavs(),reg:{nombre:"",mail:"",pass:"",pass2:"",ok:false,e:{}},rol:"viajero",origen:"La Font de la Figuera",destino:"Xàtiva",fecha:"2026-11-27",viaje:null,plaza:null,toast:"",adminTab:"viajes",
+ reservas:[{id:"CH-20481",ruta:"Moixent → Hospital Xàtiva",fecha:"27/11/2026",hora:"06:50",plaza:12,estado:"Confirmada"},{id:"CH-20177",ruta:"Xàtiva → La Llosa de Ranes",fecha:"20/11/2026",hora:"18:00",plaza:7,estado:"Realizada"}],
+ ocupadas:[1,2,3,5,6,8,9,10,14,15,17,18,19,21,22,25,26,29,30,33,34,37,38,39,40,11,13,16,20,23,24,27,28,31,32,35,36,4,7,12]};
+
+const pantallas={form:["Formulario admin","RF-09, RF-10, RF-11"],splash:["Arranque","Animación"],login:["Inicio de sesión","RF-02"],registro:["Registro","RF-01"],cerca:["Parada cercana","Extra (mapa)"],buscar:["Buscar viaje","RF-04"],perfil:["Perfil","Extra"],resultados:["Resultados","RF-05"],plaza:["Elegir plaza","RF-06"],ok:["Reserva confirmada","RF-06"],reservas:["Mis reservas","RF-07, RF-08"],rutas:["Líneas","RF-03"],mapa:["Bus en directo","RF-14 (fase 2)"],admin:["Panel admin","RF-09 a RF-12"],pasajeros:["Pasajeros","RF-12"]};
+const notas={
+ splash:"Pantalla de arranque: el autobús cruza la carretera y aparece el logo. Dura unos 2 segundos y pasa sola al inicio de sesión. En React Native se haría con la API Animated.",
+ cerca:"Mapa con tu posición, la parada más cercana y el camino andando. El prototipo intenta usar tu ubicación real; como la página publicada no puede pedirla, usa una simulada que puedes cambiar abajo. El botón abre Google Maps con la ruta a pie hasta la parada. En la app se haría con expo-location para la posición y react-native-maps para el mapa.",
+ registro:"Registro del viajero con nombre, correo y contraseña (RF-01). Comprueba los campos antes de enviar, enseña lo segura que es la contraseña y si algo falla el formulario tiembla. Los administradores no se registran aquí, los da de alta la empresa.",
+ login:"Ya no se elige el rol. La app mira el correo y la contraseña y, si es una cuenta de administrador, abre el panel; si es de viajero, abre la búsqueda. Si las claves están mal sale un error y el formulario tiembla.",
+ perfil:"Pestaña de perfil con tus datos, un resumen de tus viajes, tus favoritos (se pueden borrar), el cambio de contraseña y cerrar sesión.",
+ buscar:"El botón ⇄ intercambia origen y destino. Arriba sale el próximo bus de tu trayecto con cuenta atrás en tiempo real. Debajo, tus trayectos favoritos (se guardan con la estrella de la pantalla de resultados; en la app sería AsyncStorage). La parada más cercana está simulada porque el prototipo no puede pedir la ubicación; en la app se usaría expo-location. Los desplegables tienen las paradas reales de las líneas 1 y 2. La búsqueda va nada más entrar para cumplir RNF-04 (reserva en 5 pasos o menos).",
+ resultados:"Puedes filtrar por mañana o tarde. Si activas 'sin conexión' (debajo de estas notas) sale la pantalla de error con el botón de reintentar, como piden los apuntes del Tema 4. Solo salen los viajes que pasan primero por el origen y luego por el destino. Si eliges sábado o domingo salen los horarios de festivos, que en la web solo existen para La Font - Moixent.",
+ plaza:"Eliges cuántos viajeros sois (hasta 4) y marcas el mismo número de plazas. El precio se multiplica. Las plazas ocupadas son de ejemplo.",
+ ok:"Confirmación con el billete y su código QR (RF-16), que lleva el localizador. Si activas el aviso, sale arriba una notificación de ejemplo como la que llegaría 30 minutos antes (en la app, expo-notifications).",
+ reservas:"Cada reserva confirmada tiene su billete QR y el interruptor del aviso de 30 minutos. Solo se puede cancelar un viaje que aún no ha salido.",
+ rutas:"Horarios en forma de tabla, como los de las marquesinas: eliges línea, sentido y tipo de día. Cada columna es un autobús y cada fila una parada; la hora de salida y la de llegada de cada autobús van en rojo. La tabla se desplaza de lado si hay muchas salidas. La web también tiene el bus urbano de Xàtiva y el tren turístico, que los dejo para cuando profundicemos.",
+ mapa:"Fuera del MVP según tu documento. El recorrido de la Línea 1 está dibujado con la posición real de cada parada.",
+ form:"Formulario del administrador. Comprueba los datos antes de guardar (matrícula 1234 ABC, plazas entre 10 y 70, al menos dos paradas por línea...) y si algo falla marca el error y tiembla. Al crear un viaje solo pones la hora de salida y las demás horas se calculan con los tiempos de la línea.",
+ admin:"Panel del administrador con alta, edición y borrado de viajes, líneas y autobuses (RF-09 a RF-11). Antes de borrar pide confirmación y avisa de lo que se pierde: un autobús con viajes asignados no se deja borrar. El botón 👥 abre los pasajeros del viaje. La ocupación enseña en barras qué porcentaje de plazas está reservado en cada sublínea.",
+ pasajeros:"Listado de pasajeros de un viaje concreto."
+};
+const precio=(a,b)=>(1.2+0.35*Math.abs(b-a)).toFixed(2).replace(".",",");
+const mins=t=>{const[h,m]=t.split(":").map(Number);return h*60+m};
+viajes.sort((a,b)=>a.dias.localeCompare(b.dias)||mins(a.p[0][1])-mins(b.p[0][1]));
+const dur=(a,b)=>{const d=mins(b)-mins(a);return d>=60?Math.floor(d/60)+" h "+(d%60)+" min":d+" min"};
+const esFinde=f=>[0,6].includes(new Date(f+"T12:00").getDay());
+const fechaTxt=f=>new Date(f+"T12:00").toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"});
+function buscar(){const t=esFinde(S.fecha)?"F":L;return viajes.filter(v=>v.dias===t).map(v=>{const i=v.p.findIndex(x=>x[0]===S.origen),j=v.p.findIndex(x=>x[0]===S.destino);return i>=0&&j>i?{v,i,j}:null}).filter(Boolean).sort((a,b)=>mins(a.v.p[a.i][1])-mins(b.v.p[b.i][1]))}
+
+const orden=["splash","login","registro","buscar","cerca","resultados","plaza","ok","rutas","mapa","reservas","perfil","admin","form","pasajeros"];
+let anterior=null,timerSplash=null;
+function ir(p){S.atras=orden.indexOf(p)<orden.indexOf(S.pantalla);S.pantalla=p;S.toast="";
+ if(p==="resultados"){S.cargando=true;setTimeout(()=>{S.cargando=false;if(S.pantalla==="resultados"){anterior="resultados";pintar(true)}},750)}
+ if(p==="cerca"&&!S.ubic)setTimeout(localizar,50);
+ if(p==="splash"){clearTimeout(timerSplash);timerSplash=setTimeout(()=>{if(S.pantalla==="splash")ir("login")},2600)}
+ pintar()}
+const cuentas=[{mail:"viajero@chambitos.com",pass:"Viajero2026!",rol:"viajero",nombre:"Laura"},{mail:"admin@chambitos.com",pass:"Admin2026!",rol:"admin",nombre:"Admin"}];
+function entrar(){const c=cuentas.find(x=>x.mail===S.lmail.trim().toLowerCase()&&x.pass===S.lpass);
+ if(!c){S.lerr="Correo o contraseña incorrectos";anterior="login";pintar(true);const f=document.getElementById("lform");f.classList.add("shake");return}
+ S.lerr="";S.nombre=c.nombre;S.rol=c.rol;S.mail=c.mail;ir(c.rol==="admin"?"admin":"buscar")}
+function leerFavs(){try{return JSON.parse(localStorage.getItem("favs"))||[["Moixent","Hospital Xàtiva"]]}catch(e){return [["Moixent","Hospital Xàtiva"]]}}
+function guardarFavs(){try{localStorage.setItem("favs",JSON.stringify(S.favs))}catch(e){}}
+const esFav=()=>S.favs.some(f=>f[0]===S.origen&&f[1]===S.destino);
+function toggleFav(){if(esFav()){S.favs=S.favs.filter(f=>!(f[0]===S.origen&&f[1]===S.destino));toast("Quitado de favoritos")}else{S.favs.push([S.origen,S.destino]);toast("Guardado en favoritos")}guardarFavs();anterior="resultados";pintar(true)}
+function usarFav(k){S.origen=S.favs[k][0];S.destino=S.favs[k][1];ir("resultados")}
+const corto=x=>x.replace("La Font de la Figuera","La Font").replace("Hospital Xàtiva","Hosp. Xàtiva").replace("La Llosa de Ranes","La Llosa");
+const coords={"La Font de la Figuera":[38.80494,-0.87985],"Moixent":[38.87532,-0.74954],"Vallada":[38.89594,-0.68910],"Montesa":[38.94816,-0.64927],"La Llosa de Ranes":[39.01854,-0.53359],"Xàtiva":[38.99233,-0.52162],"C.E. Xàtiva":[38.98763,-0.52364],"Hospital Xàtiva":[39.00678,-0.50957],"Benicolet":[38.91935,-0.34601],"Pinet":[38.98276,-0.33839],"Llutxent":[38.94271,-0.35660],"Quatretonda":[38.94570,-0.40163],"Genovés":[38.98842,-0.47042]};
+const sitios=[["Xàtiva centro",38.9872,-0.5160],["Moixent",38.8760,-0.7530],["Llutxent",38.9405,-0.3540],["Hospital",39.0050,-0.5115]];
+function dist(a,b){return Math.hypot((a[0]-b[0])*111.2,(a[1]-b[1])*86.6)}
+function localizar(){S.ubic=null;pintar(true);
+ const usar=k=>{S.sitio=k;S.ubic={lat:sitios[k][1],lng:sitios[k][2],real:false,nombre:sitios[k][0]};if(S.pantalla==="cerca"){anterior="cerca";pintar(true)}};
+ try{if(!navigator.geolocation)throw 0;let hecho=false;const t=setTimeout(()=>{if(!hecho){hecho=true;usar(S.sitio||0)}},2500);
+  navigator.geolocation.getCurrentPosition(p=>{if(hecho)return;hecho=true;clearTimeout(t);S.ubic={lat:p.coords.latitude,lng:p.coords.longitude,real:true,nombre:"Tu ubicación"};if(S.pantalla==="cerca"){anterior="cerca";pintar(true)}},()=>{if(hecho)return;hecho=true;clearTimeout(t);usar(S.sitio||0)},{timeout:2400})
+ }catch(e){usar(S.sitio||0)}}
+function masCercana(u){let m=null,dm=1e9;for(const [n,c] of Object.entries(coords)){const d=dist(c,[u.lat,u.lng]);if(d<dm){dm=d;m=n}}return [m,dm]}
+function mapa(u,par){const pc=coords[par];const pts=[[u.lat,u.lng],pc,...Object.values(coords).filter(c=>dist(c,pc)<1.3)];
+ let la1=Math.min(...pts.map(p=>p[0])),la2=Math.max(...pts.map(p=>p[0])),lo1=Math.min(...pts.map(p=>p[1])),lo2=Math.max(...pts.map(p=>p[1]));
+ const cla=(la1+la2)/2,clo=(lo1+lo2)/2;let sp=Math.max((la2-la1)*111.2,(lo2-lo1)*86.6,0.8)*1.35;
+ const W=320,H=240,k=Math.min(W,H)/sp;const X=lng=>W/2+(lng-clo)*86.6*k,Y=lat=>H/2-(lat-cla)*111.2*k;
+ let g="";for(let i=0;i<W;i+=32)g+=`<line x1="${i}" y1="0" x2="${i}" y2="${H}"/>`;for(let i=0;i<H;i+=32)g+=`<line x1="0" y1="${i}" x2="${W}" y2="${i}"/>`;
+ const lin=lineas.map(l=>`<polyline points="${l.paradas.filter(n=>coords[n]).map(n=>X(coords[n][1]).toFixed(1)+","+Y(coords[n][0]).toFixed(1)).join(" ")}" fill="none" stroke="var(--seat-taken)" stroke-width="3" stroke-linejoin="round" opacity=".6"/>`).join("");
+ const st=Object.entries(coords).map(([n,c])=>{const x=X(c[1]),y=Y(c[0]);if(x<-20||x>W+20||y<-20||y>H+20)return "";const sel=n===par;const cerca=!sel&&Math.hypot(x-X(pc[1]),y-Y(pc[0]))<40;
+  return `<circle cx="${x}" cy="${y}" r="${sel?9:5}" fill="${sel?"var(--brand)":"var(--phone)"}" stroke="var(--brand)" stroke-width="3"/>${cerca?"":`<text x="${x+11}" y="${y+4}" font-size="${sel?12:10}" font-weight="${sel?700:400}" fill="var(--fg)" font-family="Inter,sans-serif">${n}</text>`}`}).join("");
+ const ux=X(u.lng),uy=Y(u.lat);const km=sp/1.35;const barra=km>3?1:km>1.2?0.5:0.2;
+ return `<div class="mapa2"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Mapa con tu posición y la parada ${par}"><rect width="${W}" height="${H}" fill="var(--surface)"/><g stroke="var(--line)" stroke-width="1">${g}</g>${lin}
+  <line class="ruta" x1="${ux}" y1="${uy}" x2="${X(pc[1])}" y2="${Y(pc[0])}" stroke="var(--brand-dark)" stroke-width="4" stroke-linecap="round"/>${st}
+  <circle class="yo" cx="${ux}" cy="${uy}" r="8" fill="#2b7de9"/><circle cx="${ux}" cy="${uy}" r="8" fill="#2b7de9" stroke="#fff" stroke-width="3"/>
+  <line x1="10" y1="${H-12}" x2="${10+barra*k}" y2="${H-12}" stroke="var(--fg)" stroke-width="2"/><text x="10" y="${H-17}" font-size="9" fill="var(--fg)" font-family="Inter,sans-serif">${barra>=1?barra+" km":barra*1000+" m"}</text></svg>
+  <span class="esc">${u.real?"GPS":"Simulada"}</span></div>`}
+function salidasDesde(par){const t=esFinde(new Date().toISOString().slice(0,10))?"F":L;const ahora=new Date().getHours()*60+new Date().getMinutes();
+ return viajes.filter(v=>v.dias===t).flatMap(v=>v.p.map((x,i)=>i<v.p.length-1&&x[0]===par?{h:x[1],d:v.p.at(-1)[0],l:v.linea}:null).filter(Boolean)).filter(x=>mins(x.h)>ahora).sort((a,b)=>mins(a.h)-mins(b.h)).slice(0,3)}
+function abrirForm(tipo,k){let d;
+ if(tipo==="bus")d=k<0?{mat:"",plazas:"40"}:{...buses[k],plazas:String(buses[k].plazas)};
+ if(tipo==="linea")d=k<0?{id:String(lineas.length+1),nombre:"",paradas:[]}:{id:lineas[k].id,nombre:lineas[k].nombre,paradas:[...lineas[k].paradas],sub:lineas[k].sub};
+ if(tipo==="viaje"){const v=viajes[k];d=k<0?{lin:"1",sub:"1a",h:"08:00",dias:"L",bus:buses[0].mat,precio:""}:{lin:v.linea[0],sub:v.linea,h:v.p[0][1],dias:v.dias,bus:v.bus,precio:v.precio?String(v.precio):""}}
+ S.form={tipo,k,d,e:{}};S.borrar=null;ir("form")}
+function marcarParada(n,on){const d=S.form.d;d.paradas=on?[...d.paradas,n]:d.paradas.filter(x=>x!==n);anterior="form";pintar(true)}
+function plantilla(lin){const vs=viajes.filter(v=>v.linea[0]===lin).sort((a,b)=>b.p.length-a.p.length);if(vs.length)return vs[0].p.map(x=>[x[0],mins(x[1])-mins(vs[0].p[0][1])]);const l=lineas.find(x=>x.id===lin);return l.paradas.map((n,i)=>[n,i*10])}
+const hhmm=m=>String(Math.floor(m/60)%24).padStart(2,"0")+":"+String(m%60).padStart(2,"0");
+function guardarForm(){const f=S.form,d=f.d,e={};
+ if(f.tipo==="bus"){if(!/^\d{4} ?[A-Z]{3}$/.test(d.mat.trim()))e.mat="Formato de matrícula: 4 números y 3 letras (1234 ABC)";else if(buses.some((b,k)=>k!==f.k&&b.mat.replace(" ","")===d.mat.replace(" ","")))e.mat="Ya hay un autobús con esa matrícula";
+  const n=Number(d.plazas);if(!(n>=10&&n<=70))e.plazas="Las plazas tienen que estar entre 10 y 70"}
+ if(f.tipo==="linea"){if(!d.id.trim())e.id="Pon un número de línea";else if(lineas.some((l,k)=>k!==f.k&&l.id===d.id.trim()))e.id="Ya existe la línea "+d.id;if(d.nombre.trim().length<4)e.nombre="Pon un nombre a la línea";if(d.paradas.length<2)e.paradas="Marca al menos dos paradas"}
+ if(f.tipo==="viaje"){if(!d.sub.trim().startsWith(d.lin))e.sub="La sublínea tiene que empezar por el número de la línea ("+d.lin+")";if(!/^\d\d:\d\d$/.test(d.h))e.h="Pon una hora de salida";if(d.precio!==""&&!(Number(d.precio)>0))e.precio="El precio tiene que ser mayor que 0"}
+ f.e=e;if(Object.keys(e).length){anterior="form";pintar(true);const x=document.getElementById("aform");x.classList.add("shake");return}
+ let msg="";
+ if(f.tipo==="bus"){const b={mat:d.mat.trim().replace(/^(\d{4})([A-Z])/,"$1 $2"),plazas:Number(d.plazas)};if(f.k<0){buses.push(b);msg="Autobús creado"}else{const viejo=buses[f.k].mat;viajes.forEach(v=>{if(v.bus===viejo)v.bus=b.mat});buses[f.k]=b;msg="Autobús guardado"}S.adminTab="buses"}
+ if(f.tipo==="linea"){const l={id:d.id.trim(),nombre:d.nombre.trim(),paradas:d.paradas,sub:d.sub||""};if(f.k<0){lineas.push(l);msg="Línea creada"}else{lineas[f.k]=l;msg="Línea guardada"}S.adminTab="rutas"}
+ if(f.tipo==="viaje"){const t=plantilla(d.lin),ini=mins(d.h),bus=buses.find(b=>b.mat===d.bus);const nv={linea:d.sub.trim(),dias:d.dias,p:t.map(([n,o])=>[n,hhmm(ini+o)]),bus:d.bus,precio:d.precio===""?null:Number(d.precio)};
+  if(f.k<0){nv.id=Math.max(...viajes.map(v=>v.id))+1;nv.total=bus.plazas;nv.libres=bus.plazas;viajes.push(nv);msg="Viaje creado"}else{const v=viajes[f.k];const res=v.total-v.libres;Object.assign(v,nv);v.total=bus.plazas;v.libres=Math.max(0,bus.plazas-res);msg="Viaje guardado"}
+  viajes.sort((a,b)=>a.dias.localeCompare(b.dias)||mins(a.p[0][1])-mins(b.p[0][1]));S.adminTab="viajes"}
+ ir("admin");toast(msg)}
+function avisoBorrar(tipo,k){if(tipo==="viaje"){const v=viajes[k],n=v.total-v.libres;return n?`Tiene ${n} reservas que se cancelarán.`:"No tiene reservas."}
+ if(tipo==="linea"){const n=viajes.filter(v=>v.linea[0]===lineas[k].id).length;return n?`También se borrarán sus ${n} viajes.`:""}
+ const n=viajes.filter(v=>v.bus===buses[k].mat).length;return n?`Tiene ${n} viajes asignados, no se puede borrar hasta cambiarlos de autobús.`:""}
+function borrar(tipo,k){S.borrar=null;
+ if(tipo==="bus"){if(viajes.some(v=>v.bus===buses[k].mat)){toast("Primero cambia de autobús sus viajes");anterior="admin";pintar(true);return}buses.splice(k,1);toast("Autobús borrado")}
+ if(tipo==="linea"){const id=lineas[k].id;for(let i=viajes.length-1;i>=0;i--)if(viajes[i].linea[0]===id)viajes.splice(i,1);lineas.splice(k,1);toast("Línea borrada")}
+ if(tipo==="viaje"){viajes.splice(k,1);toast("Viaje borrado")}
+ anterior="admin";pintar(true)}
+function cambiarPass(){const w=S.pwd;const c=cuentas.find(x=>x.mail===(S.mail||"viajero@chambitos.com"));
+ if(!c||c.pass!==w.a)w.e="La contraseña actual no es correcta";else if(w.n.length<8)w.e="La nueva contraseña necesita al menos 8 caracteres";else if(w.n!==w.r)w.e="Las contraseñas no coinciden";else{c.pass=w.n;S.pwd={a:"",n:"",r:"",open:false,e:""};anterior="perfil";pintar(true);toast("Contraseña cambiada");return}
+ anterior="perfil";pintar(true);const f=document.getElementById("pform");if(f)f.classList.add("shake")}
+function mapaLinea(){const ps=lineas[0].paradas.map(n=>[n,coords[n]]);const la=ps.map(p=>p[1][0]),lo=ps.map(p=>p[1][1]);const W=320,H=260,m=28;
+ const sx=(W-2*m)/((Math.max(...lo)-Math.min(...lo))*86.6),sy=(H-2*m)/((Math.max(...la)-Math.min(...la))*111.2),k=Math.min(sx,sy);
+ const cx=(Math.max(...lo)+Math.min(...lo))/2,cy=(Math.max(...la)+Math.min(...la))/2;const X=v=>W/2+(v-cx)*86.6*k,Y=v=>H/2-(v-cy)*111.2*k;
+ const d="M"+ps.map(p=>X(p[1][1]).toFixed(1)+" "+Y(p[1][0]).toFixed(1)).join(" L");
+ const lab=ps.map(([n,c])=>{const x=X(c[1]),y=Y(c[0]);const izq=x>W-90;return `<circle cx="${x}" cy="${y}" r="5" fill="var(--phone)" stroke="var(--brand)" stroke-width="3"/>${n==="La Llosa de Ranes"?`<text x="${x-9}" y="${y-4}" text-anchor="end" font-size="10" fill="var(--fg)" font-family="Inter,sans-serif">La Llosa</text>`:n==="C.E. Xàtiva"?`<text x="${x-6}" y="${y+18}" text-anchor="end" font-size="10" fill="var(--fg)" font-family="Inter,sans-serif">Xàtiva · C.E. · Hospital</text>`:["Xàtiva","Hospital Xàtiva"].includes(n)?"":`<text x="${izq?x-9:x+9}" y="${y+4}" text-anchor="${izq?"end":"start"}" font-size="10" fill="var(--fg)" font-family="Inter,sans-serif">${corto(n)}</text>`}`}).join("");
+ return `<div class="mapa2"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Recorrido real de la Línea 1"><rect width="${W}" height="${H}" fill="var(--surface)"/><path d="${d}" stroke="var(--brand)" stroke-width="4" fill="none" stroke-linejoin="round" stroke-linecap="round"/>${lab}
+  <circle r="8" fill="var(--brand-dark)" stroke="#fff" stroke-width="2"><animateMotion dur="16s" repeatCount="indefinite" path="${d}"/></circle>
+  <line x1="12" y1="${H-12}" x2="${12+5*k}" y2="${H-12}" stroke="var(--fg)" stroke-width="2"/><text x="12" y="${H-17}" font-size="9" fill="var(--fg)" font-family="Inter,sans-serif">5 km</text></svg></div>`}
+function cercana(){if(S.cerca){S.origen=S.cerca[0];S.cerca=null;pintar(true);toast("Origen cambiado a "+S.origen);return}
+ const yo=[38.9872,-0.5160];let mejor=null,dm=1e9;for(const [n,c] of Object.entries(coords)){const d=Math.hypot((c[0]-yo[0])*111,(c[1]-yo[1])*86.6);if(d<dm){dm=d;mejor=n}}
+ S.cerca=[mejor,dm<1?Math.round(dm*1000)+" m":dm.toFixed(1)+" km"];anterior="buscar";pintar(true)}
+function proximo(){const ahora=new Date();const hoy=ahora.getDay();const finde=d=>d===0||d===6;
+ for(let k=0;k<8;k++){const d=new Date(ahora);d.setDate(d.getDate()+k);const t=finde(d.getDay())?"F":L;
+  const cands=viajes.filter(v=>v.dias===t).map(v=>{const i=v.p.findIndex(x=>x[0]===S.origen),j=v.p.findIndex(x=>x[0]===S.destino);if(i<0||j<=i)return null;const [h,m]=v.p[i][1].split(":").map(Number);const sal=new Date(d);sal.setHours(h,m,0,0);return sal>ahora?{v,i,j,sal}:null}).filter(Boolean).sort((a,b)=>a.sal-b.sal);
+  if(cands.length)return cands[0]}return null}
+function cuenta(ms){const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return h>=24?Math.floor(h/24)+" d":h?h+"h "+String(m).padStart(2,"0")+"m":String(m).padStart(2,"0")+":"+String(x).padStart(2,"0")}
+function proxBus(){const p=proximo();if(!p)return `<div class="prox"><small>Próximo bus</small><b>${corto(S.origen)} → ${corto(S.destino)}</b><span>No hay servicio en este trayecto</span></div>`;
+ const hoy=new Date().toDateString()===p.sal.toDateString();
+ return `<div class="prox"><small>Próximo bus · Línea ${p.v.linea}</small><b>${corto(S.origen)} → ${corto(S.destino)}</b><span class="cd" id="cd" data-t="${p.sal.getTime()}">${cuenta(p.sal-new Date())}</span><span>${hoy?"Hoy":p.sal.toLocaleDateString("es-ES",{weekday:"long"})} a las ${p.v.p[p.i][1]} · llega ${p.v.p[p.j][1]}</span></div>`}
+setInterval(()=>{const e=document.getElementById("cd");if(e)e.textContent=cuenta(+e.dataset.t-new Date())},1000);
+function aviso(i,on){S.reservas[i].aviso=on;if(!on){toast("Aviso desactivado");return}
+ const r=S.reservas[i];document.querySelectorAll(".noti").forEach(n=>n.remove());const n=document.createElement("div");n.className="noti";n.setAttribute("role","status");
+ n.innerHTML=`<div class="ico"><img src="${LOGO}" alt=""></div><p><b>Chambitos · dentro de 30 min</b><br>Tu bus ${r.ruta} sale a las ${r.hora}. ${(r.n||1)>1?"Plazas":"Plaza"} ${r.plaza}.</p>`;document.getElementById("phone").appendChild(n);setTimeout(()=>n.remove(),4300)}
+function pintarQR(){if(!window.QRCode)return;document.querySelectorAll("[data-qr]").forEach(d=>{if(d.dataset.hecho)return;d.dataset.hecho=1;new QRCode(d,{text:"CHAMBITOS|"+d.dataset.qr,width:260,height:260,colorDark:"#1e1810",colorLight:"#ffffff"})})}
+function fuerza(x){let n=0;if(x.length>=8)n++;if(/[A-Z]/.test(x))n++;if(/[0-9]/.test(x))n++;if(/[^A-Za-z0-9]/.test(x))n++;return [[0,"transparent"],[25,"var(--bad)"],[50,"var(--accent)"],[75,"#c9a400"],[100,"var(--ok)"]][x?Math.max(1,n):0]}
+function medir(){const f=fuerza(S.reg.pass);const b=document.getElementById("barra_f");b.style.width=f[0]+"%";b.style.background=f[1]}
+function registrar(){const r=S.reg;r.e={};
+ if(r.nombre.trim().length<3)r.e.nombre="Escribe tu nombre completo";
+ if(!/^\S+@\S+\.\S+$/.test(r.mail))r.e.mail="El correo no tiene un formato válido";
+ if(r.pass.length<8)r.e.pass="La contraseña necesita al menos 8 caracteres";
+ if(r.pass!==r.pass2)r.e.pass2="Las contraseñas no coinciden";
+ if(!r.ok)r.e.ok="Tienes que aceptar las condiciones";
+ if(Object.keys(r.e).length){anterior="registro";pintar(true);const f=document.getElementById("form");f.classList.remove("shake");void f.offsetWidth;f.classList.add("shake");return}
+ cuentas.push({mail:r.mail.trim().toLowerCase(),pass:r.pass,rol:"viajero",nombre:r.nombre.split(" ")[0]});S.nombre=r.nombre.split(" ")[0];S.mail=r.mail.trim().toLowerCase();ir("buscar");toast("Cuenta creada. Bienvenido/a, "+S.nombre)}
+function toast(t){S.toast=t;pintar();setTimeout(()=>{if(S.toast===t){S.toast="";pintar()}},2400)}
+function barra(t,atras){return `<div class="bar">${atras?`<button aria-label="Volver" onclick="ir('${atras}')">←</button>`:""}<img src="${LOGO}" alt="Autobuses Chambitos"><h2>${t}</h2>${S.pantalla==="resultados"?`<button class="star ${esFav()?"on":""}" aria-label="Guardar en favoritos" onclick="toggleFav()">${esFav()?"★":"☆"}</button>`:""}</div>`}
+function nav(){const it=[["buscar","⌕","Buscar"],["rutas","⇄","Líneas"],["mapa","◉","En directo"],["reservas","▤","Reservas"],["perfil","☺","Perfil"]];
+ const act={cerca:"buscar",perfil:"perfil",resultados:"buscar",plaza:"buscar",ok:"reservas"}[S.pantalla]||S.pantalla;
+ return `<div class="nav">${it.map(([p,i,t])=>`<button class="${act===p?"on":""}" onclick="ir('${p}')"><span class="ic">${i}</span>${t}</button>`).join("")}</div>`}
+const opts=sel=>paradas.map(p=>`<option ${p===sel?"selected":""}>${p}</option>`).join("");
+
+const vistas={
+ login:()=>`<div class="screen">
+   <div class="hero"><img src="${LOGO}" alt="Autobuses Chambitos"><span>Más de 75 años de experiencia</span></div>
+   <div id="lform" style="display:flex;flex-direction:column;gap:12px">
+   <label>Correo electrónico<input id="mail" type="email" value="${S.lmail}" oninput="S.lmail=this.value" placeholder="tucorreo@ejemplo.com"></label>
+   <label>Contraseña<input id="pass" type="password" value="${S.lpass}" oninput="S.lpass=this.value" placeholder="Tu contraseña"></label>
+   ${S.lerr?`<span class="lerr">${S.lerr}</span>`:""}
+   <a href="#" onclick="toast('Te enviaríamos un correo para cambiar la contraseña');return false" style="color:var(--muted);font-size:13px;align-self:flex-end;margin-top:-4px">¿Has olvidado tu contraseña?</a>
+   <button class="btn" onclick="entrar()">Iniciar sesión</button></div>
+   <p class="sub" style="text-align:center;margin-top:8px">¿No tienes cuenta? <a href="#" onclick="ir('registro');return false" style="color:var(--brand);font-weight:600">Regístrate</a></p>
+ </div>`,
+ splash:()=>`<div class="splash"><img src="${LOGO}" alt="Autobuses Chambitos"><div class="road"></div>
+   <svg class="busico" width="80" height="40" viewBox="0 0 80 40" aria-hidden="true"><rect x="2" y="4" width="74" height="26" rx="6" fill="#fff"/><rect x="8" y="9" width="12" height="9" rx="2" fill="#a80607"/><rect x="24" y="9" width="12" height="9" rx="2" fill="#a80607"/><rect x="40" y="9" width="12" height="9" rx="2" fill="#a80607"/><rect x="58" y="9" width="14" height="13" rx="2" fill="#1e1810"/><circle cx="18" cy="32" r="6" fill="#1e1810"/><circle cx="60" cy="32" r="6" fill="#1e1810"/></svg>
+   <small>Más de 75 años de experiencia</small></div>`,
+ registro:()=>{const r=S.reg;const f=fuerza(r.pass);return barra("Crear cuenta","login")+`<div class="screen" id="form">
+   <p class="head">Tus datos</p>
+   <label>Nombre y apellidos<input id="r_nombre" value="${r.nombre}" oninput="S.reg.nombre=this.value" placeholder="Ej. Laura Gómez"></label>${r.e.nombre?`<span class="err">${r.e.nombre}</span>`:""}
+   <label>Correo electrónico<input id="r_mail" type="email" value="${r.mail}" oninput="S.reg.mail=this.value" placeholder="tucorreo@ejemplo.com"></label>${r.e.mail?`<span class="err">${r.e.mail}</span>`:""}
+   <label>Contraseña<input id="r_pass" type="password" value="${r.pass}" oninput="S.reg.pass=this.value;medir()" placeholder="Mínimo 8 caracteres"></label>
+   <div class="fuerza"><i id="barra_f" style="width:${f[0]}%;background:${f[1]}"></i></div>${r.e.pass?`<span class="err">${r.e.pass}</span>`:""}
+   <label>Repite la contraseña<input id="r_pass2" type="password" value="${r.pass2}" oninput="S.reg.pass2=this.value"></label>${r.e.pass2?`<span class="err">${r.e.pass2}</span>`:""}
+   <label class="chk"><input id="r_ok" type="checkbox" ${r.ok?"checked":""} onchange="S.reg.ok=this.checked">Acepto las condiciones de uso y la política de privacidad</label>${r.e.ok?`<span class="err">${r.e.ok}</span>`:""}
+   <button class="btn" onclick="registrar()">Crear cuenta</button>
+   <p class="sub" style="text-align:center">¿Ya tienes cuenta? <a href="#" onclick="ir('login');return false" style="color:var(--brand);font-weight:600">Inicia sesión</a></p>
+ </div>`},
+ cerca:()=>{const u=S.ubic;if(!u)return barra("Parada cercana","buscar")+`<div class="screen"><div class="skel" style="height:240px"></div><p class="sub" style="text-align:center">Buscando tu ubicación…</p></div>`+nav();
+   const [par,d]=masCercana(u);const pc=coords[par];const minA=Math.max(1,Math.round(d*1.3/4.8*60));const sal=salidasDesde(par);
+   const gm=`https://www.google.com/maps/dir/?api=1&destination=${pc[0]},${pc[1]}&travelmode=walking`;
+   return barra("Parada cercana","buscar")+`<div class="screen">
+   ${mapa(u,par)}
+   <div><p class="head">Parada más cercana</p><b style="font:700 20px var(--display)">${par}</b></div>
+   <div class="datos"><div><b>${d<1?Math.round(d*1000)+" m":d.toFixed(1)+" km"}</b><span>distancia</span></div><div><b>${minA} min</b><span>andando</span></div><div><b>${sal[0]?sal[0].h:"--"}</b><span>próxima salida</span></div></div>
+   ${sal.length?`<div>${sal.map(x=>`<div class="row"><span><span class="pill line">${x.l}</span> hacia ${x.d}</span><span class="d" style="font-family:var(--mono)">${x.h}</span></div>`).join("")}</div>`:`<p class="sub">Hoy ya no salen más autobuses desde esta parada.</p>`}
+   <button class="btn" onclick="S.origen='${par}';ir('buscar');toast('Origen cambiado a ${par}')">Salir desde esta parada</button>
+   <a class="btn ghost gmaps" href="${gm}" target="_blank" rel="noopener">Cómo llegar en Google Maps</a>
+   ${u.real?"":`<p class="head">Simular que estoy en</p><div class="seg">${sitios.map((x,k)=>`<button class="${S.sitio===k?"on":""}" onclick="S.sitio=${k};S.ubic={lat:${x[1]},lng:${x[2]},real:false,nombre:'${x[0]}'};anterior='cerca';pintar(true)">${x[0].replace(" centro","")}</button>`).join("")}</div>`}
+ </div>`+nav()},
+ buscar:()=>barra("Hola, "+S.nombre)+`<div class="screen">
+   ${proxBus()}
+   ${S.favs.length?`<p class="head">Tus favoritos</p><div class="favs">${S.favs.map((f,k)=>`<button class="chip" onclick="usarFav(${k})">★ ${corto(f[0])} → <b>${corto(f[1])}</b></button>`).join("")}</div>`:""}
+   <p class="head">¿A dónde vas?</p>
+   <div class="near"><span style="flex:1;min-width:0">📍 ¿Qué parada tienes más cerca?</span><button class="btn ghost" onclick="ir('cerca')">Ver mapa</button></div>
+   <label>Origen<select id="origen" onchange="S.origen=this.value">${opts(S.origen)}</select></label>
+   <button class="swap" aria-label="Intercambiar origen y destino" onclick="const o=S.origen;S.origen=S.destino;S.destino=o;anterior='buscar';pintar(true)">⇅</button>
+   <label>Destino<select id="destino" onchange="S.destino=this.value">${opts(S.destino)}</select></label>
+   <label>Fecha<input id="fecha" type="date" value="${S.fecha}" onchange="S.fecha=this.value"></label>
+   <button class="btn" onclick="ir('resultados')">Buscar viajes</button>
+ </div>`+nav(),
+ resultados:()=>{const r=buscar().filter(({v,i})=>S.franja==="todos"||(S.franja==="manana"?mins(v.p[i][1])<840:mins(v.p[i][1])>=840));
+   if(S.offline&&!S.cargando)return barra("Sin conexión","buscar")+`<div class="screen">${errorRed("No hemos podido cargar los viajes","Comprueba tu conexión a internet e inténtalo otra vez.","ir('resultados')")}</div>`+nav();return barra(`${S.origen.replace("La Font de la Figuera","La Font")} → ${S.destino.replace("Hospital ","Hosp. ")}`,"buscar")+`<div class="screen">
+   <div class="stagger" style="display:flex;flex-direction:column;gap:12px"><p class="sub">${fechaTxt(S.fecha).replace(/^./,c=>c.toUpperCase())} · ${r.length} viaje${r.length===1?"":"s"}</p>
+   <div class="favs">${[["todos","Todos"],["manana","Mañana"],["tarde","Tarde"]].map(([k,n])=>`<button class="chip" style="${S.franja===k?"background:var(--brand);color:#fff;border-color:var(--brand)":""}" onclick="S.franja='${k}';anterior='resultados';pintar(true)">${n}</button>`).join("")}</div>
+   ${S.cargando?'<div class="skel"></div><div class="skel"></div><div class="skel"></div>':r.length?r.map(({v,i,j})=>{const pl=v.libres===0?`<span class="pill bad">Completo</span>`:v.libres<6?`<span class="pill low">Quedan ${v.libres}</span>`:`<span class="pill">${v.libres} libres</span>`;
+   return `<button class="trip" ${v.libres===0?"disabled style='opacity:.55;cursor:not-allowed'":""} onclick="S.viaje={id:${v.id},i:${i},j:${j}};S.plazas=[];S.nv=1;ir('plaza')">
+     <span class="t">${v.p[i][1]} → ${v.p[j][1]}</span><span class="p">${pv(v,i,j)} €</span>
+     <span class="m">${dur(v.p[i][1],v.p[j][1])} · ${j-i-1?(j-i-1)+" paradas intermedias":"Directo"}</span>${pl}
+     <span><span class="pill line">${v.linea}</span></span></button>`}).join(""):`<div class="empty">No hay viajes entre estas paradas ese día. ${S.franja!=="todos"?"Prueba a quitar el filtro de "+(S.franja==="manana"?"mañana":"tarde")+".":"Los fines de semana solo hay servicio entre La Font de la Figuera y Moixent."}</div>`}
+ </div></div>`+nav()},
+ plaza:()=>{const {id,i,j}=S.viaje;const v=viajes.find(x=>x.id===id);const ocup=S.ocupadas.slice(0,v.total-v.libres);let s="";
+   for(let n=1;n<=40;n++){const t=ocup.includes(n);s+=`<button class="seat ${t?"taken":""} ${S.plazas.includes(n)?"sel":""}" ${t?"disabled":""} aria-label="Plaza ${n}" onclick="elegir(${n})">${n}</button>`;if(n%4===2)s+="<span></span>"}
+   return barra("Elige plaza","resultados")+`<div class="screen">
+   <p class="sub">${v.p[i][1]} ${v.p[i][0]} → ${v.p[j][1]} ${v.p[j][0]} · Bus ${v.bus}</p>
+   <div class="legend"><span><i style="background:var(--seat)"></i>Libre</span><span><i style="background:var(--seat-taken)"></i>Ocupada</span><span><i style="background:var(--brand)"></i>Tuya</span></div>
+   <div class="cnt"><span class="sub">Viajeros</span><button aria-label="Menos viajeros" onclick="viajeros(-1)">−</button><b>${S.nv}</b><button aria-label="Más viajeros" onclick="viajeros(1,${v.libres})">+</button></div>
+   <div class="bus"><div class="front">▲ CONDUCTOR</div>${s}</div>
+   <button class="btn" ${S.plazas.length===S.nv?"":"disabled"} onclick="reservar()">${S.plazas.length===S.nv?`Confirmar ${S.nv>1?"plazas":"plaza"} ${S.plazas.join(", ")} · ${total(pv(v,i,j),S.nv)} €`:`Elige ${S.nv-S.plazas.length} plaza${S.nv-S.plazas.length>1?"s":""} más`}</button>
+ </div>`+nav()},
+ ok:()=>{const r=S.reservas[0];return barra("Reserva hecha")+`<div class="screen">
+   <svg class="check" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="none" stroke="var(--ok)" stroke-width="4"/><path d="M19 33l9 9 17-19" fill="none" stroke="var(--ok)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+   <div class="ticket"><div class="top"><span>Reserva confirmada</span><b>${r.ruta}</b></div>
+   <dl><dt>Fecha</dt><dd>${r.fecha}</dd><dt>Salida</dt><dd>${r.hora}</dd><dt>Línea</dt><dd>${r.linea}</dd><dt>${(r.n||1)>1?"Plazas":"Plaza"}</dt><dd>${r.plaza}</dd><dt>Viajeros</dt><dd>${r.n||1}</dd><dt>Precio</dt><dd>${r.precio} € (pago en el bus)</dd></dl>
+   <div class="code">Localizador ${r.id}</div><div class="qr" data-qr="${r.id}"></div></div>
+   <label class="sw"><input type="checkbox" ${r.aviso?"checked":""} onchange="aviso(0,this.checked)">Avisarme 30 minutos antes de salir</label>
+   <button class="btn" onclick="ir('reservas')">Ver mis reservas</button>
+   <button class="btn ghost" onclick="ir('buscar')">Volver al inicio</button>
+ </div>`+nav()},
+ reservas:()=>barra("Mis reservas")+`<div class="screen">
+   ${S.reservas.map((r,i)=>{const est=r.estado==="Confirmada"?"ok":r.estado==="Cancelada"?"bad":"";
+   return `<div class="card"><div style="display:flex;justify-content:space-between;gap:8px"><b>${r.ruta}</b><span class="pill ${est}">${r.estado}</span></div>
+   <span class="sub">${r.fecha} · ${r.hora} · ${(r.n||1)>1?"Plazas":"Plaza"} ${r.plaza} · ${r.id}</span>
+   ${r.estado==="Confirmada"?`<label class="sw"><input type="checkbox" ${r.aviso?"checked":""} onchange="aviso(${i},this.checked)">Aviso 30 min antes</label>${r.verQr?`<div class="qr" data-qr="${r.id}"></div><button class="btn ghost" onclick="S.reservas[${i}].verQr=false;pintar(true)">Ocultar billete</button>`:`<button class="btn" onclick="S.reservas[${i}].verQr=true;pintar(true)">Ver billete QR</button>`}`:""}
+   ${r.estado==="Confirmada"?(r.preg?`<div class="confirm"><button class="btn danger" onclick="cancelar(${i})">Sí, cancelar</button><button class="btn ghost" onclick="S.reservas[${i}].preg=false;pintar()">No</button></div>`:`<button class="btn ghost" onclick="S.reservas[${i}].preg=true;pintar()">Cancelar reserva</button>`):""}</div>`}).join("")}
+ </div>`+nav(),
+ rutas:()=>{const l=lineas[S.lin]||lineas[0];const pos=n=>l.paradas.indexOf(n);
+   const sentido=v=>pos(v.p[0][0])<pos(v.p.at(-1)[0])?"ida":"vuelta";
+   const vs=viajes.filter(v=>v.linea[0]===l.id&&v.dias===S.dia&&sentido(v)===S.sent).sort((a,b)=>mins(a.p[0][1])-mins(b.p[0][1]));
+   const filas=(S.sent==="ida"?l.paradas:[...l.paradas].reverse()).filter(n=>vs.some(v=>v.p.some(x=>x[0]===n)));
+   const desde=S.sent==="ida"?l.paradas[0]:l.paradas.at(-1),hasta=S.sent==="ida"?l.paradas.at(-1):l.paradas[0];
+   const tabla=vs.length?`<div class="hor"><table><thead><tr><th>Parada</th>${vs.map(v=>`<th><span class="pill line">${v.linea}</span></th>`).join("")}</tr></thead><tbody>${filas.map(n=>`<tr><th>${corto(n)}</th>${vs.map(v=>{const x=v.p.find(y=>y[0]===n);return `<td class="${x&&(x===v.p[0]||x===v.p.at(-1))?"ext":""}">${x?x[1]:"<span class='no'>·</span>"}</td>`}).join("")}</tr>`).join("")}</tbody></table></div>
+     <p class="sub" style="font-size:12px">Cada columna es un autobús. Lee hacia abajo para ver a qué hora pasa por cada parada. En rojo, donde sale y donde termina. Un punto: ese autobús no para ahí.</p>`:`<div class="empty">No hay servicio ${S.dia==="F"?"los fines de semana":"entre semana"} en este sentido.</div>`;
+   return barra("Horarios")+`<div class="screen">
+   <div class="seg">${lineas.map((x,k)=>`<button class="${(S.lin||0)===k?"on":""}" onclick="S.lin=${k};anterior='rutas';pintar(true)">Línea ${x.id}</button>`).join("")}</div>
+   <div><b style="font:700 17px var(--display)">${l.nombre.replace(/^Línea \S+ · /,"")}</b><p class="sub" style="font-size:12px;margin-top:2px">${l.sub||""}</p></div>
+   <div class="seg">${[["ida",corto(l.paradas[0])+" →"],["vuelta","← "+corto(l.paradas.at(-1))]].map(([k,n])=>`<button class="${S.sent===k?"on":""}" onclick="S.sent='${k}';anterior='rutas';pintar(true)">${n}</button>`).join("")}</div>
+   <div class="favs">${[["L","Lunes a viernes"],["F","Sáb, dom y festivos"]].map(([k,n])=>`<button class="chip" style="${S.dia===k?"background:var(--brand-dark);color:#fff;border-color:var(--brand-dark)":""}" onclick="S.dia='${k}';anterior='rutas';pintar(true)">${n}</button>`).join("")}</div>
+   <p class="head">${corto(desde)} → ${corto(hasta)}</p>
+   ${tabla}
+ </div>`+nav()},
+ mapa:()=>barra("En directo")+`<div class="screen">
+   <span class="tag">Fase 2 · fuera del MVP</span>
+   ${mapaLinea()}
+   <div class="card"><b>Línea 1a · Bus 4721 LKM</b><span class="sub">Entre Vallada y Montesa · llega a Hospital Xàtiva sobre las 07:49 (+2 min)</span></div>
+ </div>`+nav(),
+ perfil:()=>{const act=S.reservas.filter(r=>r.estado==="Confirmada").length,hechos=S.reservas.filter(r=>r.estado==="Realizada").length;const w=S.pwd;
+   return barra("Perfil")+`<div class="screen">
+   <div class="avatar">${(S.nombre[0]||"V").toUpperCase()}</div>
+   <div style="text-align:center"><b style="font:700 19px var(--display)">${S.nombre}</b><p class="sub">${S.mail||"viajero@chambitos.com"}</p></div>
+   <div class="stats"><div><b>${act}</b><span>reservas activas</span></div><div><b>${hechos}</b><span>viajes hechos</span></div><div><b>${S.favs.length}</b><span>favoritos</span></div></div>
+   <p class="head">Favoritos</p>
+   <div>${S.favs.length?S.favs.map((f,k)=>`<div class="row"><span>★ ${f[0]} → ${f[1]}</span><button class="btn ghost" style="padding:6px 10px;font-size:12px" onclick="S.favs.splice(${k},1);guardarFavs();anterior='perfil';pintar(true)">Quitar</button></div>`).join(""):`<p class="sub">Aún no tienes favoritos. Guárdalos con la estrella en los resultados.</p>`}</div>
+   <p class="head">Seguridad</p>
+   ${w.open?`<div id="pform" style="display:flex;flex-direction:column;gap:10px"><label>Contraseña actual<input id="p_a" type="password" value="${w.a}" oninput="S.pwd.a=this.value"></label><label>Nueva contraseña<input id="p_n" type="password" value="${w.n}" oninput="S.pwd.n=this.value"></label><label>Repite la nueva<input id="p_r" type="password" value="${w.r}" oninput="S.pwd.r=this.value"></label>${w.e?`<span class="err" style="margin:0">${w.e}</span>`:""}<div class="confirm"><button class="btn" onclick="cambiarPass()">Guardar</button><button class="btn ghost" onclick="S.pwd={a:'',n:'',r:'',open:false,e:''};anterior='perfil';pintar(true)">Cancelar</button></div></div>`:`<button class="btn ghost" onclick="S.pwd.open=true;anterior='perfil';pintar(true)">Cambiar contraseña</button>`}
+   <button class="btn danger" onclick="S.lpass='';S.pwd.open=false;ir('login')">Cerrar sesión</button>
+ </div>`+nav()},
+  admin:()=>{const t=S.adminTab;let lista="";
+   const fila=(tipo,k,n,d,extra)=>S.borrar===tipo+k?`<div class="aviso"><span>¿Seguro que quieres borrar <b>${n}</b>? ${avisoBorrar(tipo,k)}</span><div class="confirm">${tipo==="bus"&&viajes.some(v=>v.bus===buses[k].mat)?"":`<button class="btn danger" style="padding:9px" onclick="borrar('${tipo}',${k})">Sí, borrar</button>`}<button class="btn ghost" style="padding:9px" onclick="S.borrar=null;anterior='admin';pintar(true)">Cancelar</button></div></div>`:`<div class="arow"><div style="min-width:0"><div class="n">${n}</div><div class="d">${d}</div></div><div class="acts">${extra||""}<button class="ib" onclick="abrirForm('${tipo}',${k})">Editar</button><button class="ib del" aria-label="Borrar" onclick="S.borrar='${tipo}${k}';anterior='admin';pintar(true)">✕</button></div></div>`;
+   if(t==="viajes")lista=viajes.map((v,k)=>fila("viaje",k,`${v.p[0][1]} · ${v.linea} ${corto(v.p[0][0])} → ${corto(v.p.at(-1)[0])}`,`${v.dias===L?"Lun-Vie":"Sáb-Dom"} · ${v.bus} · ${v.total-v.libres}/${v.total} reservas`,`<button class="ib" onclick="S.viaje={id:${v.id},i:0,j:${v.p.length-1}};ir('pasajeros')">👥</button>`)).join("");
+   if(t==="rutas")lista=lineas.map((r,k)=>fila("linea",k,r.nombre,r.paradas.length+" paradas · "+viajes.filter(v=>v.linea[0]===r.id).length+" viajes")).join("");
+   if(t==="occ"){const g={};viajes.forEach(v=>{g[v.linea]=g[v.linea]||[0,0];g[v.linea][0]+=v.total-v.libres;g[v.linea][1]+=v.total});const tot=Object.values(g).reduce((a,x)=>[a[0]+x[0],a[1]+x[1]],[0,0]);
+     lista=`<div class="kpi"><div><b>${Math.round(tot[0]/tot[1]*100)} %</b><span>ocupación media</span></div><div><b>${tot[0]}</b><span>plazas reservadas</span></div></div><p class="head" style="margin-top:14px">Por sublínea</p><div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">${Object.keys(g).sort().map(k=>{const pc=Math.round(g[k][0]/g[k][1]*100);return `<div class="occ"><span class="pill line">${k}</span><div class="tr"><i style="width:${pc}%;background:${pc>80?"var(--bad)":pc>50?"var(--accent)":"var(--ok)"}"></i></div><span>${pc} %</span></div>`}).join("")}</div><p class="sub" style="margin-top:10px">Verde menos del 50 %, naranja hasta el 80 % y rojo por encima.</p>`}
+   if(t==="buses")lista=buses.map((b,k)=>fila("bus",k,`<span style="font-family:var(--mono)">${b.mat}</span>`,`${b.plazas} plazas · ${viajes.filter(v=>v.bus===b.mat).length} viajes asignados`)).join("");
+   return `<div class="bar"><img src="${LOGO}" alt="Autobuses Chambitos"><h2>Administración</h2><button aria-label="Cerrar sesión" style="font-size:13px" onclick="S.rol='viajero';S.lpass='';ir('login')">Salir</button></div><div class="screen">
+   <div class="seg">${[["viajes","Viajes"],["rutas","Líneas"],["buses","Buses"],["occ","Ocupación"]].map(([k,n])=>`<button class="${t===k?"on":""}" onclick="S.adminTab='${k}';S.borrar=null;pintar()">${n}</button>`).join("")}</div>
+   ${t!=="occ"?`<button class="btn alt" onclick="abrirForm('${t==="viajes"?"viaje":t==="rutas"?"linea":"bus"}',-1)">+ ${t==="viajes"?"Nuevo viaje":t==="rutas"?"Nueva línea":"Nuevo autobús"}</button>`:""}
+   <div>${lista}</div>
+ </div>`},
+ form:()=>{const f=S.form,d=f.d,e=f.e,nuevo=f.k<0;const err=c=>e[c]?`<span class="err">${e[c]}</span>`:"";let campos="";
+   if(f.tipo==="bus")campos=`<label>Matrícula<input id="f_mat" value="${d.mat}" oninput="S.form.d.mat=this.value.toUpperCase()" placeholder="1234 ABC"></label>${err("mat")}<label>Número de plazas<input id="f_pl" type="number" min="10" max="70" value="${d.plazas}" oninput="S.form.d.plazas=this.value"></label>${err("plazas")}`;
+   if(f.tipo==="linea")campos=`<label>Número<input id="f_id" value="${d.id}" oninput="S.form.d.id=this.value" placeholder="3"></label>${err("id")}<label>Nombre<input id="f_nom" value="${d.nombre}" oninput="S.form.d.nombre=this.value" placeholder="Línea 3 · Xàtiva - Canals"></label>${err("nombre")}<p class="head">Paradas (en orden de marcado)</p><div class="chks">${Object.keys(coords).map(n=>`<label><input type="checkbox" ${d.paradas.includes(n)?"checked":""} onchange="marcarParada('${n}',this.checked)">${corto(n)}</label>`).join("")}</div><p class="sub" style="font-size:12px">${d.paradas.join(" → ")||"Ninguna parada marcada"}</p>${err("paradas")}`;
+   if(f.tipo==="viaje")campos=`<label>Línea<select id="f_lin" onchange="S.form.d.lin=this.value">${lineas.map(l=>`<option value="${l.id}" ${d.lin===l.id?"selected":""}>${l.nombre}</option>`).join("")}</select></label>
+     <div class="r2"><label>Sublínea<input id="f_sub" value="${d.sub}" oninput="S.form.d.sub=this.value" placeholder="1a"></label><label>Hora de salida<input id="f_h" type="time" value="${d.h}" oninput="S.form.d.h=this.value"></label></div>${err("sub")}${err("h")}
+     <label>Días<select id="f_dias" onchange="S.form.d.dias=this.value"><option value="L" ${d.dias==="L"?"selected":""}>Lunes a viernes</option><option value="F" ${d.dias==="F"?"selected":""}>Sábados, domingos y festivos</option></select></label>
+     <div class="r2"><label>Autobús<select id="f_bus" onchange="S.form.d.bus=this.value">${buses.map(b=>`<option ${d.bus===b.mat?"selected":""}>${b.mat}</option>`).join("")}</select></label><label>Precio (€)<input id="f_pr" type="number" step="0.05" min="0" value="${d.precio}" oninput="S.form.d.precio=this.value" placeholder="2,95"></label></div>${err("precio")}
+     <p class="sub" style="font-size:12px">Las horas del resto de paradas se calculan con los tiempos de la línea.</p>`;
+   const tit={bus:"autobús",linea:"línea",viaje:"viaje"}[f.tipo];
+   return `<div class="bar"><button aria-label="Volver" onclick="ir('admin')">←</button><img src="${LOGO}" alt="Autobuses Chambitos"><h2>${nuevo?(f.tipo==="linea"?"Nueva":"Nuevo"):"Editar"} ${tit}</h2></div><div class="screen" id="aform">${campos}
+   <button class="btn" onclick="guardarForm()">${nuevo?"Crear":"Guardar cambios"}</button><button class="btn ghost" onclick="ir('admin')">Cancelar</button></div>`},
+ pasajeros:()=>{const v=viajes.find(x=>x.id===S.viaje.id);const nombres=["Lucía Martí","Pau Ferrer","Ana Beltrán","Jorge Sanchis","Marta Ribes","Iván Cano","Elena Soler","Rubén Vidal"];const n=v.total-v.libres;
+   return `<div class="bar"><button aria-label="Volver" onclick="ir('admin')">←</button><img src="${LOGO}" alt="Autobuses Chambitos"><h2>Pasajeros</h2></div><div class="screen">
+   <p class="sub">${v.p[0][1]} · Línea ${v.linea} ${v.p[0][0]} → ${v.p.at(-1)[0]} · ${v.bus} · ${n} de ${v.total}</p>
+   <div>${nombres.slice(0,Math.min(8,n)).map((x,k)=>`<div class="row"><span class="n">${x}</span><span class="d" style="font-family:var(--mono)">Plaza ${S.ocupadas[k]}</span></div>`).join("")}${n>8?`<div class="row"><span class="d">y ${n-8} más…</span></div>`:""}</div>
+ </div>`}
+};
+
+function elegir(n){if(S.plazas.includes(n))S.plazas=S.plazas.filter(x=>x!==n);else{S.plazas.push(n);if(S.plazas.length>S.nv)S.plazas.shift()}anterior="plaza";pintar(true)}
+function viajeros(d,max){const n=S.nv+d;if(n<1||n>4||(max&&n>max)){if(n>4)toast("Máximo 4 viajeros por reserva");return}S.nv=n;while(S.plazas.length>n)S.plazas.pop();anterior="plaza";pintar(true)}
+const total=(p,n)=>(parseFloat(p.replace(",","."))*n).toFixed(2).replace(".",",");
+function errorRed(t,d,acc){return `<div class="estado"><svg viewBox="0 0 90 90" aria-hidden="true"><circle cx="45" cy="45" r="42" fill="var(--surface)"/><path d="M22 40a32 32 0 0146 0M30 49a20 20 0 0130 0M38 58a8 8 0 0114 0" fill="none" stroke="var(--seat-taken)" stroke-width="5" stroke-linecap="round"/><circle cx="45" cy="66" r="4" fill="var(--seat-taken)"/><path d="M24 24l42 42" stroke="var(--bad)" stroke-width="5" stroke-linecap="round"/></svg><b>${t}</b><span>${d}</span><button class="btn" style="align-self:stretch" onclick="${acc}">Reintentar</button></div>`}
+function reservar(){if(S.offline){toast("No hay conexión. La reserva no se ha hecho, inténtalo otra vez.");return}
+ const {id,i,j}=S.viaje;const v=viajes.find(x=>x.id===id);v.libres-=S.nv;S.ocupadas.splice(v.total-v.libres-S.nv,0,...S.plazas);S.plaza=S.plazas.join(", ");
+ const f=S.fecha.split("-").reverse().join("/");
+ S.reservas.unshift({id:"CH-"+(20500+S.reservas.length),ruta:v.p[i][0]+" → "+v.p[j][0],fecha:f,hora:v.p[i][1],linea:v.linea,precio:total(pv(v,i,j),S.nv),plaza:S.plaza,n:S.nv,estado:"Confirmada"});ir("ok")}
+function cancelar(i){S.reservas[i].estado="Cancelada";S.reservas[i].preg=false;const r=S.reservas[i];toast("Reserva cancelada. "+((r.n||1)>1?"Las plazas "+r.plaza+" vuelven":"La plaza "+r.plaza+" vuelve")+" a estar libre"+((r.n||1)>1?"s":""))}
+
+function pintar(sinAnim){
+ if(S.pantalla==="form"&&!S.form)S.form={tipo:"bus",k:-1,d:{mat:"",plazas:"40"},e:{}};
+ if(["admin","pasajeros","form"].includes(S.pantalla))S.rol="admin";else if(S.pantalla!=="login")S.rol="viajero";
+ if(S.pantalla==="plaza"&&!S.viaje){const r=buscar()[0];S.viaje=r?{id:r.v.id,i:r.i,j:r.j}:{id:1,i:0,j:5}}
+ if(S.pantalla==="pasajeros"&&!S.viaje)S.viaje={id:1,i:0,j:7};
+ if(S.pantalla==="ok"&&!S.reservas[0].linea){S.viaje=S.viaje||{id:1,i:1,j:7};S.plaza=S.plaza||44;}
+ document.getElementById("app").innerHTML=(S.offline&&!["splash","login","registro"].includes(S.pantalla)?'<div class="offbar">Sin conexión · algunas funciones no van</div>':"")+vistas[S.pantalla]()+(S.toast?`<div class="toast" role="status">${S.toast}</div>`:"");
+ const sc=document.querySelector("#app .screen, #app .splash");if(sc&&!sinAnim&&anterior!==S.pantalla){sc.classList.add("enter");if(S.atras)sc.classList.add("back")}anterior=S.pantalla;pintarQR();
+ document.getElementById("jump").innerHTML=Object.entries(pantallas).map(([k,[n]])=>`<button aria-current="${k===S.pantalla}" onclick="ir('${k}')">${n}</button>`).join("");
+ document.getElementById("note").innerHTML=`<span class="rf">${pantallas[S.pantalla][1]}</span><br>${notas[S.pantalla]}`;
+}
+S.reservas[0].linea="1a";S.reservas[0].precio="2,95";
+ir("splash");
+</script>
