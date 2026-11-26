@@ -1,6 +1,8 @@
 import { Platform } from 'react-native';
 
-const URL = Platform.OS === 'android' ? 'http://10.0.2.2:8080/api' : 'http://localhost:8080/api';
+const SERVIDOR_AWS = '';
+const LOCAL = Platform.OS === 'android' ? 'http://10.0.2.2:8080' : 'http://localhost:8080';
+const URL = (SERVIDOR_AWS || LOCAL) + '/api';
 
 let token = null;
 

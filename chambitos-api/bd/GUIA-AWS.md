@@ -1,6 +1,6 @@
-# Subir la base de datos de Chambitos a AWS (RDS)
+# Subir Chambitos a AWS (RDS y EC2)
 
-En esta carpeta está `chambitos.sql`. Crea la base de datos `chambitos` con sus 7 tablas y mete los datos reales: 5 sublíneas, 28 paradas, 4 autobuses, 16 viajes con sus 80 horarios y las dos cuentas de prueba (las contraseñas van cifradas con BCrypt). Si lo ejecutas otra vez, borra las tablas y las crea de nuevo, así que se pierden las reservas que haya.
+En esta carpeta está `chambitos.sql`. Crea la base de datos `chambitos` con sus 7 tablas y mete los datos reales: 2 líneas (con sus sublíneas 1a, 1b, 1c, 2a y 2b), 16 paradas de línea, 4 autobuses, 16 viajes con sus 80 horarios y las dos cuentas de prueba (las contraseñas van cifradas con BCrypt). Si lo ejecutas otra vez, borra las tablas y las crea de nuevo, así que se pierden las reservas que haya.
 
 ## 1. Crear la base de datos en RDS
 
@@ -49,8 +49,41 @@ La app no cambia: sigue llamando al servidor en localhost:8080, pero ahora los d
 
 La contraseña no se escribe en `application.properties`, así no acaba subida a GitHub.
 
-## 5. Cosas a tener en cuenta
+## 5. Subir el servidor a una EC2
+
+Así la app no depende de tener el ordenador encendido.
+
+1. En **EC2 → Lanzar instancia**: nombre `chambitos-api`, imagen **Amazon Linux 2023**, tipo `t2.micro` o `t3.micro`, par de claves `vockey` (en AWS Academy) o uno nuevo. En la red, crea un grupo de seguridad `chambitos-api-sg` con SSH (22) desde **Mi IP** y una regla **TCP personalizada, puerto 8080, origen 0.0.0.0/0**.
+2. En el grupo `chambitos-bd-sg` de la base de datos añade otra regla MYSQL/Aurora (3306) con origen el grupo `chambitos-api-sg`, para que la EC2 pueda entrar en la base de datos.
+3. En el ordenador, genera el jar desde `chambitos-api`:
+   ```
+   .\mvnw.cmd clean package -DskipTests
+   ```
+   Queda en `target\chambitos-api-1.0.0.jar`.
+4. Cópialo a la EC2 (en AWS Academy la clave es `labsuser.pem`, se descarga en **AWS Details**):
+   ```
+   scp -i labsuser.pem target\chambitos-api-1.0.0.jar ec2-user@IP_PUBLICA_EC2:/home/ec2-user/api.jar
+   ssh -i labsuser.pem ec2-user@IP_PUBLICA_EC2
+   ```
+5. Dentro de la EC2 instala Java y arranca el servidor:
+   ```
+   sudo dnf install -y java-17-amazon-corretto-headless
+   export DB_URL="jdbc:mysql://PUNTO_DE_ENLACE:3306/chambitos?serverTimezone=Europe/Madrid"
+   export DB_USER="admin"
+   export DB_PASSWORD="tu contraseña"
+   nohup java -jar api.jar > api.log 2>&1 &
+   ```
+   Para comprobarlo, abre en el navegador `http://IP_PUBLICA_EC2:8080/api/viajes`. Tienen que salir los 16 viajes.
+6. En la app, abre `chambitos-app/src/api.js` y pon la dirección en la constante de arriba:
+   ```
+   const SERVIDOR_AWS = 'http://IP_PUBLICA_EC2:8080';
+   ```
+   Si la dejas vacía (`''`), la app vuelve a usar el servidor local.
+
+La IP pública de la EC2 cambia cada vez que la paras y la arrancas (en AWS Academy pasa al empezar cada laboratorio), así que tendrás que cambiarla en `api.js` y volver a arrancar el servidor con el paso 5.
+
+## 6. Cosas a tener en cuenta
 
 - En AWS Academy (Learner Lab), al terminar la sesión del laboratorio la base de datos se para y vuelve a arrancar en la siguiente. El punto de enlace no cambia.
 - Cuando ya no la necesites, bórrala desde RDS para no gastar crédito.
-- El siguiente paso sería subir también el servidor (por ejemplo a una EC2 o a Elastic Beanstalk) y poner su dirección en `src/api.js` de la app.
+- Cuando no la uses, para también la EC2.
