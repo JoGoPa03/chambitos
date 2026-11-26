@@ -35,6 +35,7 @@ CREATE TABLE linea (
   id BIGINT NOT NULL AUTO_INCREMENT,
   codigo VARCHAR(5) NOT NULL,
   nombre VARCHAR(100) NOT NULL,
+  descripcion VARCHAR(255),
   PRIMARY KEY (id),
   CONSTRAINT uk_linea_codigo UNIQUE (codigo)
 );
@@ -44,7 +45,6 @@ CREATE TABLE parada_linea (
   linea_id BIGINT NOT NULL,
   orden INT NOT NULL,
   nombre VARCHAR(100) NOT NULL,
-  minutos INT NOT NULL,
   PRIMARY KEY (id),
   CONSTRAINT fk_parada_linea_linea FOREIGN KEY (linea_id) REFERENCES linea (id) ON DELETE CASCADE
 );
@@ -52,6 +52,8 @@ CREATE TABLE parada_linea (
 CREATE TABLE viaje (
   id BIGINT NOT NULL AUTO_INCREMENT,
   linea_id BIGINT NOT NULL,
+  sublinea VARCHAR(3) NOT NULL,
+  precio DOUBLE,
   autobus_id BIGINT NOT NULL,
   dias VARCHAR(1) NOT NULL,
   sentido VARCHAR(6) NOT NULL,
@@ -85,6 +87,7 @@ CREATE TABLE reserva (
   asientos VARCHAR(20) NOT NULL,
   precio DOUBLE NOT NULL,
   estado VARCHAR(12) NOT NULL,
+  aviso BOOLEAN NOT NULL DEFAULT FALSE,
   PRIMARY KEY (id),
   CONSTRAINT fk_reserva_usuario FOREIGN KEY (usuario_id) REFERENCES usuario (id),
   CONSTRAINT fk_reserva_viaje FOREIGN KEY (viaje_id) REFERENCES viaje (id) ON DELETE CASCADE,
@@ -94,8 +97,8 @@ CREATE TABLE reserva (
 CREATE INDEX idx_reserva_viaje_fecha ON reserva (viaje_id, fecha);
 
 INSERT INTO usuario (id, nombre, correo, contrasena, rol) VALUES
-  (1, 'Laura', 'viajero@chambitos.com', '$2a$10$IyLh5rLcnsItk2tjQqvWweX.vTuAY8k726L5IxkYF3dLAOBdw.uhG', 'viajero'),
-  (2, 'Admin', 'admin@chambitos.com', '$2a$10$lX6epifB26rb.CZ4iLkhWevlAEKkrBpmDS5TD.p4Njpqu6QTBFeyS', 'admin');
+  (1, 'Laura', 'viajero@chambitos.com', '$2a$10$rfXLFXpSo.MLRqXiyBD6SO4eO3gvOEmChFZ7i.omfQam9PfSoRWL6', 'viajero'),
+  (2, 'Admin', 'admin@chambitos.com', '$2a$10$qy8gpLtQBkj3IoGdanjtmuiQuGKW97tjFNooPg9QgR1qRHubuUIZe', 'admin');
 
 INSERT INTO autobus (id, matricula, plazas) VALUES
   (1, '4721 LKM', 40),
@@ -103,60 +106,45 @@ INSERT INTO autobus (id, matricula, plazas) VALUES
   (3, '2290 MBC', 55),
   (4, '6604 KSD', 30);
 
-INSERT INTO linea (id, codigo, nombre) VALUES
-  (1, '1a', 'La Font de la Figuera - Xàtiva'),
-  (2, '1b', 'La Font de la Figuera - Moixent'),
-  (3, '1c', 'La Llosa de Ranes - Xàtiva'),
-  (4, '2a', 'Benicolet - Xàtiva'),
-  (5, '2b', 'Pinet - Xàtiva');
+INSERT INTO linea (id, codigo, nombre, descripcion) VALUES
+  (1, '1', 'La Font de la Figuera - Xàtiva', '1a La Font - Xàtiva · 1b La Font - Moixent · 1c La Llosa de Ranes - Xàtiva'),
+  (2, '2', 'Llutxent - Xàtiva', '2a Benicolet - Xàtiva · 2b Pinet - Xàtiva');
 
-INSERT INTO parada_linea (linea_id, orden, nombre, minutos) VALUES
-  (1, 1, 'La Font de la Figuera', 0),
-  (1, 2, 'Moixent', 15),
-  (1, 3, 'Vallada', 30),
-  (1, 4, 'Montesa', 40),
-  (1, 5, 'La Llosa de Ranes', 51),
-  (1, 6, 'Xàtiva', 61),
-  (1, 7, 'C.E. Xàtiva', 64),
-  (1, 8, 'Hospital Xàtiva', 72),
-  (2, 1, 'La Font de la Figuera', 0),
-  (2, 2, 'Moixent', 15),
-  (3, 1, 'La Llosa de Ranes', 0),
-  (3, 2, 'Xàtiva', 10),
-  (3, 3, 'C.E. Xàtiva', 15),
-  (3, 4, 'Hospital Xàtiva', 23),
-  (4, 1, 'Benicolet', 0),
-  (4, 2, 'Llutxent', 5),
-  (4, 3, 'Quatretonda', 10),
-  (4, 4, 'Genovés', 20),
-  (4, 5, 'Xàtiva', 30),
-  (4, 6, 'C.E. Xàtiva', 34),
-  (4, 7, 'Hospital Xàtiva', 42),
-  (5, 1, 'Pinet', 0),
-  (5, 2, 'Llutxent', 10),
-  (5, 3, 'Quatretonda', 15),
-  (5, 4, 'Genovés', 25),
-  (5, 5, 'Xàtiva', 30),
-  (5, 6, 'C.E. Xàtiva', 35),
-  (5, 7, 'Hospital Xàtiva', 40);
+INSERT INTO parada_linea (linea_id, orden, nombre) VALUES
+  (1, 1, 'La Font de la Figuera'),
+  (1, 2, 'Moixent'),
+  (1, 3, 'Vallada'),
+  (1, 4, 'Montesa'),
+  (1, 5, 'La Llosa de Ranes'),
+  (1, 6, 'Xàtiva'),
+  (1, 7, 'C.E. Xàtiva'),
+  (1, 8, 'Hospital Xàtiva'),
+  (2, 1, 'Benicolet'),
+  (2, 2, 'Pinet'),
+  (2, 3, 'Llutxent'),
+  (2, 4, 'Quatretonda'),
+  (2, 5, 'Genovés'),
+  (2, 6, 'Xàtiva'),
+  (2, 7, 'C.E. Xàtiva'),
+  (2, 8, 'Hospital Xàtiva');
 
-INSERT INTO viaje (id, linea_id, autobus_id, dias, sentido) VALUES
-  (1, 1, 1, 'L', 'ida'),
-  (2, 2, 2, 'L', 'ida'),
-  (3, 3, 3, 'L', 'ida'),
-  (4, 2, 4, 'L', 'ida'),
-  (5, 1, 1, 'L', 'ida'),
-  (6, 1, 1, 'L', 'vuelta'),
-  (7, 3, 3, 'L', 'vuelta'),
-  (8, 1, 2, 'L', 'vuelta'),
-  (9, 2, 2, 'L', 'vuelta'),
-  (10, 2, 4, 'L', 'vuelta'),
-  (11, 2, 4, 'F', 'ida'),
-  (12, 2, 4, 'F', 'vuelta'),
-  (13, 4, 3, 'L', 'ida'),
-  (14, 5, 3, 'L', 'ida'),
-  (15, 4, 3, 'L', 'vuelta'),
-  (16, 5, 4, 'L', 'vuelta');
+INSERT INTO viaje (id, linea_id, sublinea, precio, autobus_id, dias, sentido) VALUES
+  (1, 1, '1a', NULL, 1, 'L', 'ida'),
+  (2, 1, '1b', NULL, 2, 'L', 'ida'),
+  (3, 1, '1c', NULL, 3, 'L', 'ida'),
+  (4, 1, '1b', NULL, 4, 'L', 'ida'),
+  (5, 1, '1a', NULL, 1, 'L', 'ida'),
+  (6, 1, '1a', NULL, 1, 'L', 'vuelta'),
+  (7, 1, '1c', NULL, 3, 'L', 'vuelta'),
+  (8, 1, '1a', NULL, 2, 'L', 'vuelta'),
+  (9, 1, '1b', NULL, 2, 'L', 'vuelta'),
+  (10, 1, '1b', NULL, 4, 'L', 'vuelta'),
+  (11, 1, '1b', NULL, 4, 'F', 'ida'),
+  (12, 1, '1b', NULL, 4, 'F', 'vuelta'),
+  (13, 2, '2a', NULL, 3, 'L', 'ida'),
+  (14, 2, '2b', NULL, 3, 'L', 'ida'),
+  (15, 2, '2a', NULL, 3, 'L', 'vuelta'),
+  (16, 2, '2b', NULL, 4, 'L', 'vuelta');
 
 INSERT INTO parada_viaje (viaje_id, orden, nombre, hora) VALUES
   (1, 1, 'La Font de la Figuera', '06:35'),
